@@ -1,0 +1,258 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#0b1020">
+<title>奥特曼传说：光之荒野</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='30' fill='%2345c8ff'/><circle cx='50' cy='50' r='18' fill='%23e8fbff'/></svg>">
+<style>
+  :root { --red: #e0283a; --blue: #45c8ff; --gold: #ffd23a; --panel: rgba(8, 14, 30, 0.72); }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #0b1020; color: #fff; font-family: "PingFang SC", "Microsoft YaHei", "Noto Sans SC", system-ui, sans-serif; user-select: none; -webkit-user-select: none; touch-action: none; overscroll-behavior: none; }
+  canvas#game { position: fixed; inset: 0; width: 100%; height: 100%; display: block; }
+  .hidden { display: none !important; }
+
+  /* ---------- 画面 ---------- */
+  .screen { position: fixed; inset: 0; display: none; z-index: 20; }
+  .screen.show { display: flex; }
+  #loading { background: #0b1020; align-items: center; justify-content: center; flex-direction: column; gap: 14px; z-index: 50; }
+  #loading .bar { width: 220px; height: 6px; background: #223; border-radius: 3px; overflow: hidden; }
+  #loading .bar i { display: block; height: 100%; width: 30%; background: var(--blue); animation: load 1s ease-in-out infinite alternate; }
+  @keyframes load { from { margin-left: 0 } to { margin-left: 70% } }
+
+  #title { flex-direction: column; align-items: center; justify-content: center; background: radial-gradient(ellipse at center, rgba(0,0,0,0) 30%, rgba(5,8,20,0.75) 100%); padding: 16px; text-align: center; }
+  .logo { font-size: clamp(38px, 9vw, 92px); font-weight: 900; letter-spacing: 0.06em; line-height: 1.05;
+    background: linear-gradient(180deg, #fff 0%, #cfefff 40%, #45c8ff 60%, #1a6ad0 100%); -webkit-background-clip: text; background-clip: text; color: transparent;
+    filter: drop-shadow(0 4px 0 #0a1a40) drop-shadow(0 0 24px rgba(69,200,255,0.6)); }
+  .logo small { display: block; font-size: 0.38em; letter-spacing: 0.4em; margin-top: 8px; background: linear-gradient(90deg, #ffd23a, #fff3b0, #ffd23a); -webkit-background-clip: text; background-clip: text; }
+  .sub { margin: 14px 0 34px; color: #cfe3ff; letter-spacing: 0.3em; font-size: 13px; opacity: 0.85; }
+  .btn { appearance: none; border: 2px solid rgba(255,255,255,0.85); background: linear-gradient(180deg, rgba(40,90,200,0.85), rgba(15,40,110,0.85)); color: #fff; font: inherit; font-size: 18px; font-weight: 700; letter-spacing: 0.2em; padding: 12px 38px; border-radius: 40px; margin: 6px; cursor: pointer; box-shadow: 0 0 18px rgba(69,200,255,0.45); transition: transform .12s, box-shadow .12s; min-width: 200px; }
+  .btn:hover, .btn:active { transform: scale(1.05); box-shadow: 0 0 30px rgba(69,200,255,0.9); }
+  .btn.red { background: linear-gradient(180deg, rgba(220,40,60,0.9), rgba(120,10,25,0.9)); box-shadow: 0 0 18px rgba(255,60,80,0.5); }
+  .btn.ghost { background: rgba(0,0,0,0.35); font-size: 15px; padding: 9px 26px; min-width: 0; }
+  .hint { margin-top: 26px; font-size: 12px; color: #9fb3d8; line-height: 1.8; }
+
+  #select { flex-direction: column; justify-content: flex-end; align-items: center; padding: 14px 12px max(14px, env(safe-area-inset-bottom)); background: linear-gradient(180deg, rgba(5,8,20,0.6) 0%, rgba(0,0,0,0) 25%, rgba(0,0,0,0) 45%, rgba(5,8,20,0.85) 100%); }
+  #select h2 { position: absolute; top: max(14px, env(safe-area-inset-top)); left: 0; right: 0; text-align: center; margin: 0; font-size: clamp(20px, 4vw, 30px); letter-spacing: 0.3em; text-shadow: 0 0 12px rgba(69,200,255,0.8); }
+  #hero-info { text-align: center; margin-bottom: 10px; max-width: 520px; }
+  #hero-info .n { font-size: clamp(26px, 5vw, 40px); font-weight: 900; letter-spacing: 0.1em; text-shadow: 0 2px 0 #000, 0 0 16px rgba(255,255,255,0.5); }
+  #hero-info .t { color: var(--gold); font-size: 13px; letter-spacing: 0.2em; }
+  #hero-info .d { font-size: 14px; color: #dfe9ff; margin: 6px 0; }
+  .stats { display: flex; gap: 14px; justify-content: center; font-size: 12px; color: #bcd; flex-wrap: wrap; }
+  .stats b { display: inline-block; height: 6px; background: var(--blue); border-radius: 3px; vertical-align: middle; margin-left: 4px; }
+  #hero-cards { display: flex; gap: 8px; overflow-x: auto; max-width: 100%; padding: 6px 4px 10px; scrollbar-width: none; }
+  #hero-cards::-webkit-scrollbar { display: none; }
+  .card { flex: 0 0 auto; width: 92px; padding: 10px 6px 8px; border-radius: 12px; background: var(--panel); border: 2px solid rgba(255,255,255,0.2); text-align: center; cursor: pointer; transition: transform .12s, border-color .12s; }
+  .card.on { border-color: var(--gold); transform: translateY(-4px); box-shadow: 0 0 16px rgba(255,210,58,0.5); }
+  .card .face { width: 46px; height: 54px; margin: 0 auto 6px; border-radius: 50% 50% 46% 46%; position: relative; background: #ccd; box-shadow: inset 0 -6px 0 rgba(0,0,0,0.15); }
+  .card .face::before, .card .face::after { content: ''; position: absolute; top: 22px; width: 15px; height: 9px; border-radius: 50%; background: var(--eye, #fff6c8); box-shadow: 0 0 6px var(--eye, #fff6c8); }
+  .card .face::before { left: 6px; transform: rotate(18deg); } .card .face::after { right: 6px; transform: rotate(-18deg); }
+  .card span { font-size: 12px; font-weight: 700; white-space: nowrap; }
+
+  /* ---------- HUD ---------- */
+  #hud { position: fixed; inset: 0; pointer-events: none; z-index: 10; display: none; }
+  body.playing #hud { display: block; }
+  #status { position: absolute; left: max(12px, env(safe-area-inset-left)); top: max(10px, env(safe-area-inset-top)); width: min(300px, 46vw); }
+  #hero-name { font-size: 13px; font-weight: 700; letter-spacing: 0.1em; text-shadow: 0 1px 2px #000; margin-bottom: 4px; }
+  .bar { position: relative; height: 16px; background: rgba(0,0,0,0.55); border: 2px solid rgba(255,255,255,0.75); border-radius: 9px; overflow: hidden; margin-bottom: 5px; }
+  .bar .fill { position: absolute; inset: 0 auto 0 0; width: 100%; border-radius: 7px; transition: width .15s; }
+  #hp-fill { background: linear-gradient(180deg, #7dff9a, #22b04a); }
+  #hp-fill.low { background: linear-gradient(180deg, #ff8a8a, #d01020); animation: blink .5s steps(2) infinite; }
+  @keyframes blink { 50% { opacity: .55 } }
+  #en-bar { height: 10px; }
+  #en-fill { background: linear-gradient(180deg, #9fe8ff, #2a8ad8); }
+  #en-fill.ready { background: linear-gradient(180deg, #fff3b0, #ffb020); box-shadow: 0 0 10px #ffd23a; }
+  .bar .txt { position: absolute; inset: 0; font-size: 11px; line-height: 12px; text-align: center; font-weight: 700; text-shadow: 0 1px 2px #000; }
+  #shards { display: flex; gap: 6px; margin: 6px 0 4px; }
+  .shard { width: 14px; height: 20px; clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%); background: rgba(255,255,255,0.18); outline: none; }
+  .shard.on { background: linear-gradient(180deg, #fff, #7fe8ff); filter: drop-shadow(0 0 6px #7fe8ff); }
+  #objective { font-size: 13px; line-height: 1.5; background: var(--panel); padding: 6px 10px; border-radius: 8px; display: inline-block; text-shadow: 0 1px 2px #000; max-width: 100%; }
+  #objective .arrow { display: inline-block; color: var(--gold); font-weight: 900; margin-right: 4px; }
+  #minimap { position: absolute; right: max(12px, env(safe-area-inset-right)); top: max(10px, env(safe-area-inset-top)); width: 150px; height: 150px; border-radius: 50%; pointer-events: auto; cursor: pointer; transition: all .2s; box-shadow: 0 0 12px rgba(0,0,0,0.6); }
+  #minimap.big { width: min(80vw, 80vh); height: min(80vw, 80vh); right: 50%; top: 50%; transform: translate(50%, -50%); z-index: 30; }
+  #pause-btn { position: absolute; right: max(170px, calc(env(safe-area-inset-right) + 170px)); top: max(12px, env(safe-area-inset-top)); width: 40px; height: 40px; border-radius: 50%; background: var(--panel); border: 2px solid rgba(255,255,255,0.6); color: #fff; font-size: 16px; pointer-events: auto; cursor: pointer; }
+  #stamina { position: absolute; left: calc(50% + 70px); top: 46%; width: 44px; height: 44px; opacity: 0; transition: opacity .3s; }
+  #stamina.show { opacity: 1; }
+  #stamina circle { fill: none; stroke-width: 6; }
+  #stamina .bg { stroke: rgba(0,0,0,0.4); }
+  #stamina #stamina-arc { stroke: #7dff6a; stroke-dasharray: 113; stroke-linecap: round; transform: rotate(-90deg); transform-origin: 50% 50%; }
+  #stamina.empty #stamina-arc { stroke: #ff5050; }
+  #boss-bar { position: absolute; left: 50%; bottom: 26px; transform: translateX(-50%); width: min(620px, 80vw); display: none; text-align: center; }
+  #boss-bar.show { display: block; }
+  #boss-name { font-size: 16px; font-weight: 900; letter-spacing: 0.2em; color: #ffd0d0; text-shadow: 0 0 8px #f00, 0 2px 2px #000; margin-bottom: 4px; }
+  #boss-bar .bar { height: 14px; border-color: rgba(255,200,200,0.8); }
+  #boss-lag { background: #fff3b0; }
+  #boss-fill { background: linear-gradient(180deg, #ff6a7a, #a00818); }
+  #dialog { position: absolute; left: 50%; bottom: 120px; transform: translateX(-50%); width: min(640px, 92vw); background: linear-gradient(180deg, rgba(10,18,40,0.92), rgba(5,10,25,0.92)); border: 2px solid rgba(255,255,255,0.5); border-radius: 14px; padding: 12px 18px 14px; display: none; pointer-events: auto; }
+  #dialog.show { display: block; animation: pop .2s; }
+  #dialog-speaker { color: var(--gold); font-weight: 900; letter-spacing: 0.15em; font-size: 14px; margin-bottom: 4px; }
+  #dialog-text { font-size: 16px; line-height: 1.6; min-height: 1.6em; }
+  @keyframes pop { from { transform: translateX(-50%) scale(.92); opacity: 0 } }
+  #toast { position: absolute; left: 50%; top: 22%; transform: translateX(-50%); background: var(--panel); padding: 8px 18px; border-radius: 20px; font-size: 14px; opacity: 0; transition: opacity .25s; white-space: nowrap; border: 1px solid rgba(255,255,255,0.3); }
+  #toast.show { opacity: 1; }
+  #callout { position: absolute; left: 0; right: 0; top: 32%; text-align: center; font-size: clamp(30px, 6vw, 56px); font-weight: 900; letter-spacing: 0.15em; color: #fff; text-shadow: 0 0 20px var(--blue), 0 0 40px var(--blue), 0 3px 0 #0a2a60; opacity: 0; }
+  #callout.show { animation: callout 1.4s ease-out; }
+  @keyframes callout { 0% { opacity: 0; transform: scale(1.6) } 15% { opacity: 1; transform: scale(1) } 75% { opacity: 1 } 100% { opacity: 0; transform: scale(1.05) } }
+  #hurt-flash { position: fixed; inset: 0; pointer-events: none; z-index: 9; box-shadow: inset 0 0 120px rgba(255,0,0,0.75); opacity: 0; }
+  #hurt-flash.on { animation: hurt .45s ease-out; }
+  @keyframes hurt { 0% { opacity: 1 } 100% { opacity: 0 } }
+  #fx-text { position: fixed; inset: 0; pointer-events: none; z-index: 8; overflow: hidden; }
+  .dmg { position: absolute; left: 0; top: 0; font-weight: 900; font-size: 18px; text-shadow: 0 2px 0 #000, 0 0 6px #000; white-space: nowrap; }
+  .dmg.big { font-size: 26px; }
+  #lock-hint { position: absolute; left: 50%; bottom: 40%; transform: translateX(-50%); background: var(--panel); padding: 10px 20px; border-radius: 20px; font-size: 14px; display: none; }
+  body.playing.need-lock #lock-hint { display: block; }
+  #keys-hint { position: absolute; left: max(12px, env(safe-area-inset-left)); bottom: 12px; font-size: 11px; color: rgba(255,255,255,0.75); line-height: 1.7; text-shadow: 0 1px 2px #000; }
+  #keys-hint kbd { background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3); border-radius: 4px; padding: 0 4px; font-family: inherit; }
+
+  /* ---------- 触屏控制 ---------- */
+  #touch { position: fixed; inset: 0; z-index: 11; display: none; }
+  body.touch.playing #touch { display: block; }
+  body.touch #keys-hint { display: none; }
+  #zone-left { position: absolute; left: 0; top: 0; bottom: 0; width: 45%; }
+  #zone-right { position: absolute; right: 0; top: 0; bottom: 0; width: 55%; }
+  #joy-base { position: absolute; width: 120px; height: 120px; margin: -60px 0 0 -60px; border-radius: 50%; background: rgba(255,255,255,0.12); border: 2px solid rgba(255,255,255,0.4); display: none; pointer-events: none; }
+  #joy-knob { position: absolute; left: 50%; top: 50%; width: 54px; height: 54px; border-radius: 50%; background: rgba(255,255,255,0.55); transform: translate(-50%,-50%); }
+  #joy-tip { position: absolute; left: 7%; bottom: 14%; font-size: 12px; color: rgba(255,255,255,0.5); pointer-events: none; }
+  .tbtn { position: absolute; border-radius: 50%; background: rgba(15,25,55,0.55); border: 2px solid rgba(255,255,255,0.65); color: #fff; font-weight: 900; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 15px; line-height: 1.1; }
+  .tbtn small { font-size: 9px; font-weight: 400; opacity: 0.85; }
+  .tbtn.down { background: rgba(69,200,255,0.55); transform: scale(0.94); }
+  #btn-attack { width: 84px; height: 84px; right: calc(28px + env(safe-area-inset-right)); bottom: calc(36px + env(safe-area-inset-bottom)); font-size: 20px; background: rgba(200,30,50,0.55); }
+  #btn-special { width: 64px; height: 64px; right: calc(128px + env(safe-area-inset-right)); bottom: calc(28px + env(safe-area-inset-bottom)); }
+  #btn-special.ready { background: rgba(255,180,30,0.6); box-shadow: 0 0 16px #ffd23a; }
+  #btn-jump { width: 64px; height: 64px; right: calc(40px + env(safe-area-inset-right)); bottom: calc(136px + env(safe-area-inset-bottom)); }
+  #btn-dodge { width: 54px; height: 54px; right: calc(124px + env(safe-area-inset-right)); bottom: calc(112px + env(safe-area-inset-bottom)); }
+  body.touch #boss-bar { bottom: calc(8px + env(safe-area-inset-bottom)); width: min(44vw, 420px); }
+  body.touch #boss-name { font-size: 12px; margin-bottom: 2px; }
+  body.touch #boss-bar .bar { height: 10px; }
+  body.touch #dialog { bottom: calc(46px + env(safe-area-inset-bottom)); width: min(48vw, 460px); padding: 8px 12px; }
+  body.touch #dialog-text { font-size: 13px; line-height: 1.45; }
+  body.touch #dialog-speaker { font-size: 12px; }
+  body.touch #toast { top: 16%; font-size: 13px; }
+  @media (max-height: 500px) {
+    #minimap { width: 104px; height: 104px; }
+    #pause-btn { right: calc(124px + env(safe-area-inset-right)); width: 36px; height: 36px; }
+    #status { width: min(250px, 40vw); }
+    .bar { height: 13px; } .bar .txt { font-size: 10px; line-height: 9px; }
+    #objective { font-size: 11px; padding: 4px 8px; }
+    #select h2 { display: none; }
+    #select { justify-content: flex-end; }
+    #hero-info { position: absolute; left: max(14px, env(safe-area-inset-left)); top: 12px; text-align: left; max-width: 34vw; }
+    #hero-info .d { font-size: 12px; } .stats { justify-content: flex-start; }
+    .card { width: 74px; padding: 6px 4px; } .card .face { width: 34px; height: 40px; margin-bottom: 4px; }
+    .card .face::before, .card .face::after { top: 16px; width: 11px; height: 7px; } .card .face::before { left: 4px; } .card .face::after { right: 4px; }
+    .card span { font-size: 10px; }
+    #select .btn { padding: 8px 30px; font-size: 15px; }
+    .logo { font-size: 44px; } .sub { margin: 8px 0 14px; } .hint { margin-top: 10px; }
+    #title .btn { padding: 8px 30px; font-size: 15px; }
+    .overlay h1 { font-size: 28px; } .controls { font-size: 11px; margin: 2px 0 6px; }
+    .overlay .btn { padding: 7px 26px; font-size: 14px; margin: 3px; }
+  }
+  @media (max-width: 700px) { #minimap { width: 110px; height: 110px; } #pause-btn { right: 130px; } #objective { font-size: 12px; } }
+
+  /* ---------- 菜单 ---------- */
+  .overlay { align-items: center; justify-content: center; flex-direction: column; background: rgba(4,8,20,0.7); text-align: center; padding: 20px; }
+  .overlay h1 { font-size: clamp(30px, 6vw, 54px); margin: 0 0 10px; letter-spacing: 0.2em; }
+  .overlay p { color: #cfe0ff; max-width: 520px; line-height: 1.7; }
+  #death h1 { color: #ff6a6a; text-shadow: 0 0 20px #f00; }
+  #victory h1 { color: var(--gold); text-shadow: 0 0 24px #ffb020; }
+  .controls { display: grid; grid-template-columns: auto auto; gap: 4px 16px; text-align: left; font-size: 13px; color: #cfe0ff; margin: 6px 0 14px; }
+  .controls kbd { background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3); border-radius: 4px; padding: 0 5px; font-family: inherit; color: #fff; }
+  #rotate-hint { display: none; }
+  @media (orientation: portrait) and (pointer: coarse) { #rotate-hint { display: block; position: fixed; left: 50%; bottom: 10px; transform: translateX(-50%); font-size: 12px; color: #9fb3d8; z-index: 25; } }
+</style>
+<script type="importmap">
+{ "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js" } }
+</script>
+</head>
+<body>
+<canvas id="game"></canvas>
+<div id="fx-text"></div>
+<div id="hurt-flash"></div>
+
+<div id="hud">
+  <div id="status">
+    <div id="hero-name">奥特曼</div>
+    <div class="bar"><div class="fill" id="hp-fill"></div><div class="txt" id="hp-text">100 / 100</div></div>
+    <div class="bar" id="en-bar"><div class="fill" id="en-fill"></div></div>
+    <div id="shards"></div>
+    <div id="objective"></div>
+  </div>
+  <canvas id="minimap" width="300" height="300"></canvas>
+  <button id="pause-btn" aria-label="暂停">❚❚</button>
+  <svg id="stamina" viewBox="0 0 44 44"><circle class="bg" cx="22" cy="22" r="18"/><circle id="stamina-arc" cx="22" cy="22" r="18"/></svg>
+  <div id="boss-bar"><div id="boss-name"></div><div class="bar"><div class="fill" id="boss-lag"></div><div class="fill" id="boss-fill"></div></div></div>
+  <div id="dialog"><div id="dialog-speaker"></div><div id="dialog-text"></div></div>
+  <div id="toast"></div>
+  <div id="callout"></div>
+  <div id="lock-hint">点击画面开始操控视角</div>
+  <div id="keys-hint">
+    <kbd>WASD</kbd> 移动 · <kbd>鼠标</kbd> 视角 · <kbd>Shift</kbd> 冲刺 · <kbd>空格</kbd> 跳跃（长按飞行）<br>
+    <kbd>J</kbd>/<kbd>左键</kbd> 连击 · <kbd>K</kbd>/<kbd>右键</kbd> 必杀技 · <kbd>Q</kbd>/<kbd>L</kbd> 闪避 · <kbd>M</kbd> 地图 · <kbd>Esc</kbd> 暂停
+  </div>
+</div>
+
+<div id="touch">
+  <div id="zone-left"><div id="joy-tip">← 拖动移动（推远冲刺）</div></div>
+  <div id="zone-right"></div>
+  <div id="joy-base"><div id="joy-knob"></div></div>
+  <div class="tbtn" id="btn-attack" data-btn="attack">拳<small>连击</small></div>
+  <div class="tbtn" id="btn-special" data-btn="special">光<small>必杀技</small></div>
+  <div class="tbtn" id="btn-jump" data-btn="jump">跳<small>长按飞</small></div>
+  <div class="tbtn" id="btn-dodge" data-btn="dodge">闪<small>闪避</small></div>
+</div>
+
+<div class="screen show" id="loading"><div style="letter-spacing:.3em">光之巨人正在降临……</div><div class="bar"><i></i></div></div>
+
+<div class="screen" id="title">
+  <div class="logo">奥特曼传说<small>光 之 荒 野</small></div>
+  <div class="sub">ULTRA LEGEND · BREATH OF LIGHT</div>
+  <button class="btn" id="btn-start">开始冒险</button>
+  <button class="btn ghost hidden" id="btn-new">重新开始（清除进度）</button>
+  <button class="btn ghost" id="btn-mute-title">🔊 声音：开</button>
+  <div class="hint">收集 4 块光之碎片，打破暗黑结界，击败极恶贝利亚！<br>电脑：键盘 + 鼠标 ｜ 手机：虚拟摇杆（横屏更佳）</div>
+</div>
+
+<div class="screen" id="select">
+  <h2>选择你的奥特曼</h2>
+  <div id="hero-info"><div class="n"></div><div class="t"></div><div class="d"></div><div class="stats"></div></div>
+  <div id="hero-cards"></div>
+  <button class="btn red" id="btn-go">变身！出发</button>
+</div>
+
+<div class="screen overlay" id="pause">
+  <h1>暂停</h1>
+  <div class="controls">
+    <span><kbd>WASD</kbd> / 摇杆</span><span>移动</span>
+    <span><kbd>鼠标</kbd> / 右侧滑动</span><span>视角</span>
+    <span><kbd>空格</kbd></span><span>跳跃，空中长按飞行</span>
+    <span><kbd>Shift</kbd></span><span>冲刺（消耗体力）</span>
+    <span><kbd>J</kbd> / 左键</span><span>三段连击</span>
+    <span><kbd>K</kbd> / 右键</span><span>必杀技（消耗能量）</span>
+    <span><kbd>Q</kbd> / <kbd>L</kbd></span><span>闪避（无敌）</span>
+    <span><kbd>M</kbd> / 点小地图</span><span>放大地图</span>
+  </div>
+  <button class="btn" id="btn-resume">继续</button>
+  <button class="btn ghost" id="btn-mute">🔊 声音：开</button>
+  <button class="btn ghost" id="btn-quit">返回标题</button>
+</div>
+
+<div class="screen overlay" id="death">
+  <h1>能量耗尽……</h1>
+  <p>彩色计时器熄灭了。但只要心中还有光，奥特曼就会再次站起来！</p>
+  <button class="btn" id="btn-revive">再次站起来！</button>
+</div>
+
+<div class="screen overlay" id="victory">
+  <h1>胜 利 ！</h1>
+  <p id="victory-text"></p>
+  <button class="btn" id="btn-continue">继续探索</button>
+  <button class="btn ghost" id="btn-title">返回标题</button>
+</div>
+<div id="rotate-hint">📱 横屏游玩体验更佳</div>
+
+<script type="module" src="./src/main.js"></script>
+</body>
+</html>
