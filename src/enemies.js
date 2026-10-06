@@ -428,10 +428,10 @@ export class Belial extends Enemy {
     const yGap = P.pos.y - this.pos.y;
     let anim = 'idle';
     this.cool -= dt; this.summonCD -= dt;
-    const auraOn = this.phase === 2 ? 0.18 + Math.sin(this.anim.time * 6) * 0.05 : 0;
+    const auraOn = this.phase === 2 ? 0.07 + Math.sin(this.anim.time * 6) * 0.03 : 0;
     this.aura.material.opacity += (auraOn - this.aura.material.opacity) * 0.1;
     this.aura.position.copy(this.center);
-    this.aura.scale.setScalar(this.height * 0.75);
+    this.aura.scale.setScalar(this.height * 0.62);
     if (this.phase === 2 && Math.random() < dt * 12) g.effects.burst(this.center.add(V().set((Math.random() - 0.5) * 3, (Math.random() - 0.5) * 4, (Math.random() - 0.5) * 3)), 0xff1040, 1, 3, 0.8, -3);
 
     switch (this.state) {
@@ -548,7 +548,7 @@ export class Belial extends Enemy {
         this.scale = 1.35 + Math.min(1, this.t / 2) * 0.75;
         this.model.root.scale.setScalar(this.scale);
         this.radius = 1.6 * this.scale / 1.35; this.height = 4.3 * this.scale / 1.35;
-        if (Math.random() < dt * 10) g.effects.explosion(this.center.add(V().set((Math.random() - 0.5) * 5, Math.random() * 4, (Math.random() - 0.5) * 5)), 0xff1040, 2.5, 0.5);
+        if (Math.random() < dt * 6) g.effects.explosion(this.center.add(V().set((Math.random() - 0.5) * 6, Math.random() * 4, (Math.random() - 0.5) * 6)), 0xff1040, 1.6, 0.4);
         if (this.t > 2.6) {
           this.phase = 2; this.invulnerable = false; this.name = '极恶贝利亚 · 觉醒';
           this.speed = 10; this.atk = 22;
