@@ -1,2 +1,4 @@
 .DS_Store
 node_modules/
+promo/out/
+promo/node_modules/
